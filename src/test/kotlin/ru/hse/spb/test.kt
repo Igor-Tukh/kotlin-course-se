@@ -5,7 +5,27 @@ import org.junit.Test
 
 class TestSource {
     @Test
-    fun testGreeting() {
-        assertEquals("Hello, world!", getGreeting())
+    fun testGetNameFirstSample() {
+        assertEquals("IMPOSSIBLE", getName(3, "a?c"))
+    }
+
+    @Test
+    fun testGetNameSecondSample() {
+        assertEquals("abba", getName(2, "a??a"))
+    }
+
+    @Test
+    fun testGetNameThirdSample() {
+        assertEquals("abba", getName(2, "?b?a"))
+    }
+
+    @Test
+    fun testGetNameFourthSample() {
+        assertEquals("adbeccebda", getName(5, "a?b?c?????"))
+    }
+
+    @Test
+    fun testFifthSample() {
+        assertEquals("aaabaaa", getName(2, "????aaa"))
     }
 }
