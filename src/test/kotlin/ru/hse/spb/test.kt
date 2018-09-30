@@ -1,12 +1,13 @@
 package ru.hse.spb
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TestSource {
     @Test
     fun testGetNameFirstSample() {
-        assertEquals("IMPOSSIBLE", getName(3, "a?c"))
+        assertNull(getName(3, "a?c"))
     }
 
     @Test
