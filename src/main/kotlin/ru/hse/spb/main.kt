@@ -2,84 +2,81 @@ package ru.hse.spb
 
 import java.util.*
 
-fun getName(k: Int, pattern: String): String {
-    val len = pattern.length
-    var possible = true
+fun getName(k: Int, pattern: String): String? {
+    val length = pattern.length
     var free = 0
 
-    val answer = CharArray(len)
+    val answer = CharArray(length)
     val used = BooleanArray(k)
 
     loop@ for (symbol in pattern) {
         val number = symbol.minus('a')
         when {
             number < 0 -> continue@loop
-            number >= k -> possible = false
+            number >= k -> return null
             else -> used[number] = true
         }
     }
 
-    for (index in 0..(len - 1) / 2) {
+    for (index in 0..(length - 1) / 2) {
         val left = pattern[index]
-        val right = pattern[len - 1 - index]
+        val right = pattern[length - 1 - index]
+        val isLeftQuestion: Boolean = left == '?'
+        val isRightQuestion: Boolean = right == '?'
+        val areSymbolsEqual: Boolean = left == right
 
         when {
-            left != '?' && right != '?' && left != right -> possible = false
-            left == '?' && right != '?' -> {
+            !isLeftQuestion && !isRightQuestion && !areSymbolsEqual -> return null
+            isLeftQuestion && !isRightQuestion -> {
                 answer[index] = right
-                answer[len - 1 - index] = right
+                answer[length - 1 - index] = right
             }
-            left != '?' && right == '?' -> {
+            !isLeftQuestion && isRightQuestion -> {
                 answer[index] = left
-                answer[len - 1 - index] = left
+                answer[length - 1 - index] = left
             }
-            left == '?' && right == '?' -> free++
-            left == right -> {
+            isLeftQuestion && isRightQuestion -> free++
+            areSymbolsEqual -> {
                 answer[index] = left
-                answer[len - 1 - index] = right
+                answer[length - 1 - index] = right
             }
         }
     }
 
-    val need = k - (used.filter { it }).size
+    val need = k - used.count { it }
     free -= need
 
     if (free < 0) {
-        possible = false
+        return null
     }
 
     var currentPosition = 0
-    (0..(len - 1) / 2)
-            .asSequence()
-            .filter { pattern[it] == '?' && pattern[len - 1 - it] == '?' }
+    (0..(length - 1) / 2)
+            .filter { pattern[it] == '?' && pattern[length - 1 - it] == '?' }
             .forEach {
                 if (free-- > 0) {
                     answer[it] = 'a'
-                    answer[len - 1 - it] = 'a'
+                    answer[length - 1 - it] = 'a'
                 } else {
                     while (currentPosition < k && used[currentPosition]) {
                         currentPosition++
                     }
 
                     if (currentPosition >= k) {
-                        possible = false
+                        return null
                     }
                     val symbol = 'a'.plus(currentPosition++)
                     answer[it] = symbol
-                    answer[len - 1 - it] = symbol
+                    answer[length - 1 - it] = symbol
                 }
             }
 
-    return if (possible) {
-        String(answer)
-    } else {
-        "IMPOSSIBLE"
-    }
+    return String(answer)
 }
 
 fun main(args: Array<String>) {
     val input = Scanner(System.`in`)
     val k = input.nextInt()
     val pattern: String = input.next()
-    println(getName(k, pattern))
+    println(getName(k, pattern) ?: "IMPOSSIBLE")
 }
