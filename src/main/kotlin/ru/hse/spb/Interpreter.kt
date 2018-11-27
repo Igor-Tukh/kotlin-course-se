@@ -2,12 +2,17 @@ package ru.hse.spb
 
 import ru.hse.spb.parser.ExpBaseVisitor
 import ru.hse.spb.parser.ExpParser
-import java.lang.RuntimeException
 
-class Interpreter: ExpBaseVisitor<Int?>() {
+class Interpreter : ExpBaseVisitor<Int?>() {
     private var currentScope: Scope = Scope()
     private var terminate: Boolean = false
     private var returnValue: Int? = null
+
+    private inline fun nestScope(f: () -> Unit, errorMessage: String) {
+        currentScope = Scope(currentScope)
+        f()
+        currentScope = currentScope.parentScope ?: throw RuntimeException(errorMessage)
+    }
 
     override fun visitFile(ctx: ExpParser.FileContext): Int? {
         currentScope = Scope()
@@ -15,17 +20,15 @@ class Interpreter: ExpBaseVisitor<Int?>() {
     }
 
     override fun visitBlockWithBraces(ctx: ExpParser.BlockWithBracesContext): Int? {
-        currentScope = Scope(currentScope)
-        val result = visit(ctx.block())
-        currentScope = currentScope.parentScope ?: throw RuntimeException(
-                "${ctx.start.line}: Unexpected end of scope.")
+        var result: Int? = null
+        nestScope({ result = visit(ctx.block()) }, "${ctx.start.line}: Unexpected end of scope.")
         return result
     }
 
     override fun visitBlock(ctx: ExpParser.BlockContext): Int? {
         ctx.statement()
-                .map { visit(it) }
-                .forEach { _ ->
+                .forEach {
+                    visit(it)
                     if (terminate) {
                         return returnValue
                     }
@@ -41,21 +44,19 @@ class Interpreter: ExpBaseVisitor<Int?>() {
     override fun visitFunction(ctx: ExpParser.FunctionContext): Int? {
         val functionName = ctx.Indetefier().text
         val names = ctx.parameterNames().Indetefier()
-        val function: (List<Int>) -> Int = {
-            arguments ->
-                if (arguments.size != names.size) {
-                    throw IllegalNumnberOfArgumentsException(functionName, ctx.start.line)
-                }
-                currentScope = Scope(currentScope)
+        val function: (List<Int>) -> Int = { arguments ->
+            if (arguments.size != names.size) {
+                throw IllegalNumnberOfArgumentsException(functionName, ctx.start.line)
+            }
+            nestScope({
                 for (index in 0 until names.size) {
                     val name = names[index].toString()
                     val value = arguments[index]
                     currentScope.addVariable(name, value, ctx.start.line)
                 }
                 visit(ctx.blockWithBraces())
-                currentScope = currentScope.parentScope ?: throw RuntimeException(
-                        "${ctx.start.line}: Unexpected end of scope")
-                terminate = false
+            }, "")
+            terminate = false
             returnValue ?: 0
         }
         currentScope.addFunction(functionName, function, ctx.start.line)
@@ -81,13 +82,12 @@ class Interpreter: ExpBaseVisitor<Int?>() {
         val right = ctx.right
         val isOperation = ctx.operation != null
 
-        when {
+        return when {
             isOperation -> {
                 val leftValue = visit(left)
                 val rightValue = visit(right)
                 if (leftValue == null || rightValue == null) {
-                    throw RuntimeException(
-                            "{ctx.start.line}: Error during calculating value of expression")
+                    throw RuntimeException("${ctx.start.line}: Error during calculating value of expression")
                 }
                 val operation = when {
                     ctx.PLUS() != null -> Operations.PLUS
@@ -102,14 +102,15 @@ class Interpreter: ExpBaseVisitor<Int?>() {
                     ctx.EQ() != null -> Operations.EQ
                     ctx.NEQ() != null -> Operations.NEQ
                     ctx.OR() != null -> Operations.OR
-                    else -> Operations.AND
+                    ctx.AND() != null -> Operations.AND
+                    else -> throw RuntimeException("${ctx.start.line}: Unsupported operation")
                 }
-                return operation.biFunction(leftValue, rightValue)
+                operation.biFunction(leftValue, rightValue)
             }
-            ctx.inner != null -> return visit(ctx.inner)
-            ctx.literal != null -> return Integer.parseInt(ctx.literal.text)
-            ctx.indetefier != null -> return currentScope.getVariable(ctx.indetefier.text, ctx.start.line)
-            else -> return visit(ctx.children[0])
+            ctx.inner != null -> visit(ctx.inner)
+            ctx.literal != null -> Integer.parseInt(ctx.literal.text)
+            ctx.indetefier != null -> currentScope.getVariable(ctx.indetefier.text, ctx.start.line)
+            else -> visit(ctx.children[0])
         }
     }
 
@@ -123,7 +124,7 @@ class Interpreter: ExpBaseVisitor<Int?>() {
                         "{ctx.start.line}: Error during calculating value of argument")
             }
         }
-        return currentScope.getFunction(name, ctx.start.line)(arguments.toList())
+        return currentScope.getFunction(name, ctx.start.line)(arguments)
     }
 
     override fun visitIfStatement(ctx: ExpParser.IfStatementContext): Int? {

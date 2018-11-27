@@ -207,6 +207,13 @@ class TestProgram {
     }
 
     @Test
+    fun testPriority() {
+        assertEquals(8, evaluate("""
+            return 1 + 2 * 3 + 1
+            """.trimIndent()))
+    }
+
+    @Test
     fun testPrintln() {
         val outputStream = ByteArrayOutputStream()
         System.setOut(PrintStream(outputStream))

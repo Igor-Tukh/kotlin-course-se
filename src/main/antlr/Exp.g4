@@ -55,11 +55,13 @@ expression
         |   indetefier=Indetefier
         |   literal=Literal
         |   '(' inner=expression ')'
-        |   left=expression (operation=PLUS | operation=MINUS | operation=MULT | operation=DIVIDE) right=expression
+        |   left=expression (operation=MULT | operation=DIVIDE) right=expression
         |   left=expression (operation=MODULO) right=expression
+        |   left=expression (operation=PLUS | operation=MINUS) right=expression
         |   left=expression (operation=GREATER | operation=LOWER | operation=GEQ | operation=LEQ) right=expression
         |   left=expression (operation=EQ | operation=NEQ) right=expression
-        |   left=expression (operation=OR | operation=AND) right=expression
+        |   left=expression (operation=AND) right=expression
+        |   left=expression (operation=OR) right=expression
     ;
 
 functionCall
