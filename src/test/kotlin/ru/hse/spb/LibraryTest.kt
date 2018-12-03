@@ -1,10 +1,7 @@
-package ru.spb.hse
+package ru.hse.spb
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import ru.hse.spb.AlignmentKind
-import ru.hse.spb.Document
-import ru.hse.spb.document
 import java.io.ByteArrayOutputStream
 
 class LibraryTest {

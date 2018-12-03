@@ -13,8 +13,8 @@ class TextElement(private val text: String) : Element {
     }
 }
 
-fun renderArguments(writer: Writer, arguments: ArrayList<String>, prefix: CharSequence, postfix: CharSequence) {
-    if (arguments.size > 0) {
+fun renderArguments(writer: Writer, arguments: List<String>, prefix: CharSequence, postfix: CharSequence) {
+    if (arguments.isNotEmpty()) {
         writer.write(arguments.joinToString(separator = ",", prefix = prefix, postfix = postfix))
     }
 }
@@ -28,7 +28,7 @@ abstract class Tag : Element {
     private val requiredArguments = arrayListOf<String>()
     private val optionalArguments = arrayListOf<String>()
 
-    fun addRequiredArguments(required: ArrayList<String>) {
+    fun addRequiredArguments(required: List<String>) {
         requiredArguments.addAll(required)
     }
 
@@ -56,9 +56,7 @@ abstract class Tag : Element {
 open class SingleTag(private val name: String, requiredArgument: String? = null,
                      vararg optionalArguments: String) : Tag() {
     init {
-        if (requiredArgument != null) {
-            addRequiredArguments(arrayListOf(requiredArgument))
-        }
+        addRequiredArguments(listOfNotNull(requiredArgument))
         addOptionalArguments(optionalArguments)
     }
 
@@ -73,9 +71,7 @@ open class SingleTag(private val name: String, requiredArgument: String? = null,
 open class Environment(private val name: String, requiredArgument: String? = null,
                        vararg optionalArguments: String) : Tag() {
     init {
-        if (requiredArgument != null) {
-            addRequiredArguments(arrayListOf(requiredArgument))
-        }
+        addRequiredArguments(listOfNotNull(requiredArgument))
         addOptionalArguments(optionalArguments)
     }
 
@@ -84,13 +80,13 @@ open class Environment(private val name: String, requiredArgument: String? = nul
         renderAllArguments(writer)
         writer.write("\n")
         for (child in children) {
-            child.render(writer, indent + " ".repeat(4))
+            child.render(writer, "$indent    ")
         }
         writer.write("$indent\\end{$name}\n")
     }
 
     operator fun String.unaryPlus() {
-        children.add(TextElement(this))
+        children += TextElement(this)
     }
 
     fun frame(frameTitle: String? = null, vararg optionalArguments: String, init: Frame.() -> Unit) =
@@ -150,10 +146,10 @@ enum class AlignmentKind {
     RIGHT;
 
     override fun toString(): String {
-        return when {
-            this == LEFT -> "left"
-            this == CENTER -> "center"
-            else -> "right"
+        return when (this) {
+            LEFT -> "left"
+            CENTER -> "center"
+            RIGHT -> "right"
         }
     }
 }
@@ -183,7 +179,5 @@ class Document : Environment("document") {
 }
 
 fun document(init: Document.() -> Unit): Document {
-    val document = Document()
-    document.init()
-    return document
+    return Document().apply(init)
 }
